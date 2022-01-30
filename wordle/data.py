@@ -23,7 +23,7 @@ def load_word_frequencies(
         frequencies = {w: f for w, f in frequencies.items() if f >= min_freq}
     if max_words is not None:
         selected_words = sorted(
-            list(frequencies.keys()), key=(lambda word: frequencies[word])
+            list(frequencies.keys()), key=(lambda word: -frequencies[word])
         )[:max_words]
         frequencies = {w: frequencies[w] for w in selected_words}
 
