@@ -40,7 +40,3 @@ def _filter_frequencies_from_step_info(
 
 def _get_most_common_word(frequencies: Dict[str, int]) -> str:
     return max(frequencies.keys(), key=lambda w: frequencies[w])
-
-
-def binary_distance(w1: str, w2: str) -> float:
-    return sum(l1 == l2 for l1, l2 in zip(w1, w2)) / len(w1)
