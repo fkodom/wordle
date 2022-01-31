@@ -10,9 +10,7 @@ I scraped common English words from the [BookCorpus](https://huggingface.co/data
 
 I also implemented a basic Wordle solver, based on `regex` and the same corpus of common English words. It has a success rate of about 99% on average, assuming you use a common word as your first guess. (Measured on the 2500 game words, which also happen to be part of the solver's corpus. So maybe there's some bias in this measurement, but it still generally works well.)
 
-> According to my tests, 
->
->
+> The first guess is not automated by the solver. (Potentially something to work on!) I tested the 500 most common words, to see which made for good initial guessesl **TABLE** had the highest success rate (99.9%), and **RATES** had the fewest average turns to win (3.50).
 
 
 ## Install
@@ -61,3 +59,6 @@ streamlit run app.py
 
 * Generate better benchmarks for the solver, possibly with visualizations to add to the README.
 * Provide a CLI interface for the Wordle solver, so people can use it for daily puzzles. :)
+* Add unit tests
+* GHA workflow for automated tests across Python versions
+* Publish as PyPI package
