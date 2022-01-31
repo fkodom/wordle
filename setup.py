@@ -16,7 +16,8 @@ def get_version_tag() -> str:
 
 
 extras_require: Dict[str, List[str]] = {
-    "data": ["requests"],
+    "app": ["straemlit"],
+    "benchmark": ["tqdm"],
     "test": ["black", "flake8", "isort", "pytest", "pytest-cov"],
 }
 all_require = set(r for requirements in extras_require.values() for r in requirements)
@@ -32,7 +33,7 @@ setup(
     description="CLI tool for playing and solving Wordle games.",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
-    install_requires=["streamlit"],
+    install_requires=["colorama"],
     extras_require=extras_require,
     classifiers=[
         "Programming Language :: Python :: 3",

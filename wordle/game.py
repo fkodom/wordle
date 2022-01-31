@@ -68,10 +68,11 @@ class Wordle:
         info["step"] = self._step
         info["done"] = info["success"] or self._step == STEPS_PER_GAME
 
-        self._step += 1
+        self.history.append(info)
         self._done = info["done"]
         self._success = info["success"]
-        self.history.append(info)
+        if not self._done:
+            self._step += 1
 
         if not self.silent:
             self._print_step_info(info)
