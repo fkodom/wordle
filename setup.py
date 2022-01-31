@@ -30,11 +30,12 @@ setup(
     author_email="frank.odom.iii@gmail.com",
     url="https://github.com/fkodom/wordle",
     packages=setuptools.find_packages(exclude=["tests"]),
-    description="CLI tool for playing and solving Wordle games.",
+    description="A minimal Python library for playing and solving 'Wordle' problems",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
     install_requires=["colorama"],
     extras_require=extras_require,
+    entry_points={"console_scripts": ["play-wordle=wordle.game:main"]},
     classifiers=[
         "Programming Language :: Python :: 3",
         "Operating System :: OS Independent",

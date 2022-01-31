@@ -122,5 +122,9 @@ class Wordle:
             self._render_step_info_streamlit(info={})
 
 
-if __name__ == "__main__":
+def main():
     Wordle().play()
+
+
+if __name__ == "__main__":
+    main()
