@@ -35,7 +35,12 @@ setup(
     long_description_content_type="text/markdown",
     install_requires=["colorama"],
     extras_require=extras_require,
-    entry_points={"console_scripts": ["play-wordle=wordle.game:main"]},
+    entry_points={
+        "console_scripts": [
+            "play-wordle=wordle.game:main",
+            "solve-wordle=wordle.solver:main",
+        ]
+    },
     classifiers=[
         "Programming Language :: Python :: 3",
         "Operating System :: OS Independent",
