@@ -1,7 +1,7 @@
 import streamlit as st
 from streamlit import legacy_caching
 
-from wordle.game import Wordle
+from wordle.game import StreamlitWordle
 
 
 MARKDOWN_ANSWER_TEMPLATE = """
@@ -23,7 +23,7 @@ WORDLE_RULES = """
 
 @st.cache(allow_output_mutation=True)
 def new_game():
-    return Wordle()
+    return StreamlitWordle()
 
 
 st.title("Wordle!")

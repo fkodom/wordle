@@ -1,6 +1,8 @@
+from dataclasses import dataclass
+from enum import Enum
 import random
 import time
-from typing import Dict, List, Optional
+from typing import List, Optional, Sequence, Tuple
 
 from colorama import Fore
 
@@ -11,7 +13,39 @@ STEPS_PER_GAME = 6
 MARKDOWN_LETTER_TEMPLATE = """
 <p style='color:{color};background-color:gray;font-size:24px;text-align:center'><b>{letter}</b></p>
 """
-EMPTY_LETTER = {"letter": "_", "inWord": False, "inCorrectPosition": False}
+# EMPTY_LETTER = {"letter": "_", "inWord": False, "inCorrectPosition": False}
+
+
+@dataclass
+class LetterEvaluation:
+    text: str
+    in_word: bool = False
+    in_correct_position: bool = False
+
+
+EMPTY_LETTER = LetterEvaluation(text="_")
+
+
+@dataclass
+class WordleStepInfo:
+    step: int
+    letters: Sequence[LetterEvaluation]
+    success: bool = False
+    done: bool = False
+
+
+EMPTY_STEP_INFO = WordleStepInfo(step=0, letters=[EMPTY_LETTER] * 5)
+
+
+def _evaluate_guess(guess: str, truth: str) -> Tuple[bool, List[LetterEvaluation]]:
+    guess = guess.lower().strip()
+    assert len(guess) == 5
+    success = guess == truth
+    letters = [
+        LetterEvaluation(text=x, in_word=(x in truth), in_correct_position=(x == y))
+        for x, y in zip(guess, truth)
+    ]
+    return success, letters
 
 
 class Wordle:
@@ -31,47 +65,37 @@ class Wordle:
         self._step = 1
         self._done = False
         self._success = False
-        self.history: List[Dict] = []
+        self.history: List[WordleStepInfo] = []
 
-    @staticmethod
-    def _evaluate_guess(guess: str, truth: str) -> Dict:
-        guess = guess.lower().strip()
-        assert len(guess) == 5
-        return {
-            "success": guess == truth,
-            "letters": [
-                {"letter": x, "inWord": x in truth, "inCorrectPosition": x == y}
-                for x, y in zip(guess, truth)
-            ],
-        }
-
-    def _print_step_info(self, info: Dict):
-        for letter in info["letters"]:
-            if letter["inCorrectPosition"]:
+    def _print_step_info(self, info: WordleStepInfo):
+        for letter in info.letters:
+            if letter.in_correct_position:
                 color = Fore.GREEN
-            elif letter["inWord"]:
+            elif letter.in_word:
                 color = Fore.YELLOW
             else:
                 color = Fore.RED
-            print(f"{color}{letter['letter']}{Fore.RESET}", end=" ")
+            print(f"{color}{letter.text}{Fore.RESET}", end=" ")
 
         print("\n")
-        if info["success"]:
+        if self._success:
             print(f"{Fore.GREEN}YOU WIN!{Fore.RESET}")
-        elif info["done"]:
+        elif self.done:
             print(f"{Fore.RED}You lost :(")
-            print(f"The word was: {Fore.GREEN}{self._word}{Fore.RESET}")
-        print()
+            print(f"The word was: {Fore.GREEN}{self._word.upper()}{Fore.RESET}")
 
-    def step(self, guess: str) -> Dict:
-        info = self._evaluate_guess(guess=guess, truth=self._word)
-        info["step"] = self._step
-        info["done"] = info["success"] or self._step == STEPS_PER_GAME
+    @property
+    def done(self):
+        return self._success or self._step == STEPS_PER_GAME
+
+    def step(self, guess: str) -> WordleStepInfo:
+        self._success, letters = _evaluate_guess(guess=guess, truth=self._word)
+        info = WordleStepInfo(
+            step=self._step, success=self._success, done=self.done, letters=letters
+        )
 
         self.history.append(info)
-        self._done = info["done"]
-        self._success = info["success"]
-        if not self._done:
+        if not self.done:
             self._step += 1
 
         if not self.silent:
@@ -82,30 +106,32 @@ class Wordle:
     def play(self):
         print("Wordle!\n")
 
-        while not self._done:
+        while not self.done:
             print(f"Step {self._step} of {STEPS_PER_GAME}")
-            guess = input("Enter a guess: ").strip("\n\r")
+            guess = input("Enter a guess: ").lower().strip()
             _ = self.step(guess)
 
-    def _render_step_info_streamlit(self, info: Dict):
+
+class StreamlitWordle(Wordle):
+    def _render_step_info_streamlit(self, info: WordleStepInfo):
         import streamlit as st
 
         columns = st.columns(5)
-        letters = info.get("letters", [EMPTY_LETTER] * 5)
+        letters = info.letters
 
         for column, letter in zip(columns, letters):
-            if letter["letter"] == "_":
+            if letter.text == "_":
                 color = "Gray"
-            elif letter["inCorrectPosition"]:
+            elif letter.in_correct_position:
                 color = "Green"
-            elif letter["inWord"]:
+            elif letter.in_word:
                 color = "Yellow"
             else:
                 color = "Red"
             with column:
                 st.markdown(
                     MARKDOWN_LETTER_TEMPLATE.format(
-                        color=color, letter=letter["letter"].upper()
+                        color=color, letter=letter.text.upper()
                     ),
                     unsafe_allow_html=True,
                 )
@@ -119,7 +145,7 @@ class Wordle:
 
         remaining_steps = STEPS_PER_GAME - len(self.history)
         for _ in range(remaining_steps):
-            self._render_step_info_streamlit(info={})
+            self._render_step_info_streamlit(info=EMPTY_STEP_INFO)
 
 
 def main():

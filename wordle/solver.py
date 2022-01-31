@@ -2,14 +2,15 @@ import regex
 from typing import Dict, List, Optional
 
 from wordle.data import load_word_frequencies
+from wordle.game import WordleStepInfo
 
 
 class Solver:
     def __init__(self, word_bank_size: Optional[int] = 7500):
         self.frequencies = load_word_frequencies(max_words=word_bank_size)
-        self.history: List[Dict] = []
+        self.history: List[WordleStepInfo] = []
 
-    def update(self, step_info: Dict) -> str:
+    def update(self, step_info: WordleStepInfo) -> str:
         self.history.append(step_info)
         self.frequencies = _filter_frequencies_from_step_info(
             self.frequencies, step_info
@@ -19,14 +20,12 @@ class Solver:
 
 
 def _filter_frequencies_from_step_info(
-    frequencies: Dict[str, int], info: Dict
+    frequencies: Dict[str, int], info: WordleStepInfo
 ) -> Dict[str, int]:
-    letters = info["letters"]
-    exclude = [x["letter"] for x in letters if not x["inWord"]]
-    include = [x["letter"] for x in letters if x["inWord"]]
-    regex_terms = [
-        x["letter"] if x["inCorrectPosition"] else f"[^{x['letter']}]" for x in letters
-    ]
+    letters = info.letters
+    exclude = [x.text for x in letters if not x.in_word]
+    include = [x.text for x in letters if x.in_word]
+    regex_terms = [x.text if x.in_correct_position else f"[^{x.text}]" for x in letters]
     regex_phrase = regex.compile("".join(regex_terms))
 
     return {
