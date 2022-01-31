@@ -17,7 +17,7 @@ EMPTY_LETTER = {"letter": "_", "inWord": False, "inCorrectPosition": False}
 class Wordle:
     def __init__(
         self,
-        word_bank_size: int = 1500,
+        word_bank_size: int = 2500,
         seed: Optional[int] = None,
         silent: bool = False,
     ):
