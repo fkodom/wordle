@@ -1,5 +1,6 @@
 import random
-from typing import Dict, List
+import time
+from typing import Dict, List, Optional
 
 from colorama import Fore
 
@@ -14,8 +15,16 @@ EMPTY_LETTER = {"letter": "_", "inWord": False, "inCorrectPosition": False}
 
 
 class Wordle:
-    def __init__(self, word_bank_size: int = 1500, silent: bool = False):
+    def __init__(
+        self,
+        word_bank_size: int = 1500,
+        seed: Optional[int] = None,
+        silent: bool = False,
+    ):
         word_bank = load_word_frequencies(max_words=word_bank_size)
+        if seed is None:
+            seed = int(time.time())
+        random.seed(seed)
         self._word = random.choice(list(word_bank.keys()))
         self.silent = silent
 
