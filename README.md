@@ -6,7 +6,7 @@ A minimal Python library for playing and solving [Wordle](https://www.powerlangu
 
 * **Play Wordle** in the command line
 * **Solve Wordle** in the command line
-* **[Public Web App](https://share.streamlit.io/fkodom/wordle/main/app.py)** for playing and solving Wordle games, but with a more user-friendly interface
+* **[Public Web App](https://share.streamlit.io/fkodom/wordle/main/app.py)** for endless Wordle games
 
 
 ## Install

@@ -83,14 +83,11 @@ class AssistiveSolver(Solver):
 
     def _get_step_info(self) -> WordleStepInfo:
         guess = self._get_input("Enter your guess: ")
-        in_correct_position = self._get_input(
-            "Which letters were correct (green)? Letters: "
-        )
+        in_correct_position = self._get_input("Which letters were correct (green)? ")
         success = all(letter in in_correct_position for letter in guess)
         if not success:
             in_word = self._get_input(
-                "Which letters were in the word, but in the "
-                "wrong spot (yellow)? Letters: "
+                "Which letters were in the word, but in the wrong spot (yellow)? "
             )
         else:
             in_word = ""
