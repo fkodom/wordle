@@ -1,7 +1,6 @@
-from functools import lru_cache
-import gzip
-import pickle
 import os
+import pickle
+from functools import lru_cache
 from typing import Dict, Optional
 
 WORD_FREQUENCIES_PATH = os.path.join(

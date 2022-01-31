@@ -1,5 +1,5 @@
-from functools import partial
 from concurrent.futures import ProcessPoolExecutor
+from functools import partial
 from typing import List, Tuple
 
 from tqdm import tqdm

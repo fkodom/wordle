@@ -3,7 +3,6 @@ from streamlit import legacy_caching
 
 from wordle.game import StreamlitWordle
 
-
 MARKDOWN_ANSWER_TEMPLATE = """
 The correct answer was: <p style='color:Green;font-size:24px;text-align:center'><b>{answer}</b></p>
 """

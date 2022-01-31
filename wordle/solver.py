@@ -1,5 +1,6 @@
-import regex
 from typing import Dict, List, Optional
+
+import regex
 
 from wordle.data import load_word_frequencies
 from wordle.game import WordleStepInfo
