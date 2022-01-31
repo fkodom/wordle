@@ -5,13 +5,13 @@ import os
 from typing import Dict, Optional
 
 WORD_FREQUENCIES_PATH = os.path.join(
-    os.path.dirname(__file__), os.path.pardir, "data", "word-frequencies.pkl.gz"
+    os.path.dirname(__file__), os.path.pardir, "data", "word-frequencies.pkl"
 )
 
 
 @lru_cache()
 def _load_raw_word_frequencies() -> Dict[str, int]:
-    with gzip.open(WORD_FREQUENCIES_PATH, "rb") as f:
+    with open(WORD_FREQUENCIES_PATH, "rb") as f:
         return pickle.load(f)
 
 
