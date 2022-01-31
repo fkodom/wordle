@@ -28,12 +28,12 @@ play-wordle
 ```
 
 The following dialogue should appear:
-> ```
-> Wordle!
-> 
-> Step 1 of 6
-> Enter a guess: _
-> ```
+```
+Wordle!
+
+Step 1 of 6
+Enter a guess: _
+```
 
 
 ### Streamlit App
