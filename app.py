@@ -33,7 +33,7 @@ with st.expander("Game Rules"):
 game = new_game()
 game.render_streamlit()
 
-if not game._done:
+if not game.done:
     with st.form("Form"):
         guess = st.text_input("Enter your guess: ").strip()
         if st.form_submit_button("Submit"):

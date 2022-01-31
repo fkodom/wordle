@@ -62,7 +62,6 @@ class Wordle:
         self.silent = silent
 
         self._step = 1
-        self._done = False
         self._success = False
         self.history: List[WordleStepInfo] = []
 
