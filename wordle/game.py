@@ -50,7 +50,7 @@ def _evaluate_guess(guess: str, truth: str) -> Tuple[bool, List[LetterEvaluation
 class Wordle:
     def __init__(
         self,
-        word_bank_size: int = 2500,
+        word_bank_size: int = 1500,
         seed: Optional[int] = None,
         silent: bool = False,
     ):

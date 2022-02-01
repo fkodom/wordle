@@ -10,12 +10,12 @@ from wordle.solver import Solver
 
 
 def solve_game(word: str, first_guess: str) -> Tuple[bool, int]:
-    game = Wordle(silent=True)
+    game = Wordle(word_bank_size=1500, silent=True)
     game._word = word
     solver = Solver()
     info = game.step(first_guess)
 
-    while not game._done:
+    while not game.done:
         guess = solver.update(info)
         info = game.step(guess)
 
@@ -28,7 +28,7 @@ def test_solver_with_first_guess(
     words = load_word_frequencies(max_words=max_words)
     solve_fn = partial(solve_game, first_guess=first_guess)
 
-    pool = ProcessPoolExecutor()
+    pool = ProcessPoolExecutor(max_workers=4)
     results = list(pool.map(solve_fn, words))
 
     wins = sum(r[0] for r in results)
@@ -39,12 +39,13 @@ def test_solver_with_first_guess(
 
 
 def test_first_guesses(max_words: int = 128) -> List[Tuple[str, float, float]]:
-    words = list(load_word_frequencies(max_words=max_words).keys())[96:]
+    words = list(load_word_frequencies(max_words=max_words).keys())
     results = [test_solver_with_first_guess(word) for word in tqdm(words)]
     return [(word, *result) for word, result in zip(words, results)]
 
 
 if __name__ == "__main__":
-    results = test_first_guesses(128)
-    for result in results:
-        print(result)
+    print(test_solver_with_first_guess("table"))
+    # results = test_first_guesses(512)
+    # for result in results:
+    #     print(result)
