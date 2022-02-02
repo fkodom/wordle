@@ -1,11 +1,11 @@
 import random
 import time
 from dataclasses import dataclass
-from typing import List, Optional, Sequence, Tuple
+from typing import Counter, Dict, List, Optional, Sequence, Tuple
 
 from colorama import Fore
 
-from wordle.data import load_word_frequencies
+from wordle.data import load_words
 
 WORD_LENGTH = 5
 STEPS_PER_GAME = 6
@@ -17,12 +17,16 @@ MARKDOWN_LETTER_TEMPLATE = """
 
 @dataclass
 class LetterEvaluation:
-    text: str
+    text: str = "_"
     in_word: bool = False
     in_correct_position: bool = False
 
+    @property
+    def empty(self) -> bool:
+        return self.text == "_"
 
-EMPTY_LETTER = LetterEvaluation(text="_")
+
+EMPTY_LETTER = LetterEvaluation()
 
 
 @dataclass
@@ -32,33 +36,43 @@ class WordleStepInfo:
     success: bool = False
     done: bool = False
 
+    @property
+    def guess(self) -> str:
+        return "".join([letter.text for letter in self.letters])
+
 
 EMPTY_STEP_INFO = WordleStepInfo(step=0, letters=[EMPTY_LETTER] * 5)
 
 
 def _evaluate_guess(guess: str, truth: str) -> Tuple[bool, List[LetterEvaluation]]:
-    guess = guess.lower().strip()
-    assert len(guess) == 5
+    truth_counts = Counter(truth)
     success = guess == truth
-    letters = [
-        LetterEvaluation(text=x, in_word=(x in truth), in_correct_position=(x == y))
-        for x, y in zip(guess, truth)
-    ]
+    letters: List[LetterEvaluation] = []
+
+    for x, y in zip(guess, truth):
+        if x == y:
+            letters.append(
+                LetterEvaluation(text=x, in_word=True, in_correct_position=True)
+            )
+            truth_counts[x] -= 1
+        else:
+            letters.append(LetterEvaluation(text=x))
+
+    for x, letter in zip(guess, letters):
+        if not letter.in_word and truth_counts[x] > 0:
+            letter.in_word = True
+            truth_counts[x] -= 1
+
     return success, letters
 
 
 class Wordle:
-    def __init__(
-        self,
-        word_bank_size: int = 1500,
-        seed: Optional[int] = None,
-        silent: bool = False,
-    ):
-        word_bank = load_word_frequencies(max_words=word_bank_size)
+    def __init__(self, seed: Optional[int] = None, silent: bool = False):
+        word_bank = load_words()
         if seed is None:
             seed = int(time.time())
         random.seed(seed)
-        self._word = random.choice(list(word_bank.keys()))
+        self._word = random.choice(word_bank)
         self.silent = silent
 
         self._step = 1

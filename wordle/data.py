@@ -1,29 +1,13 @@
 import os
-import pickle
 from functools import lru_cache
-from typing import Dict, Optional
+from typing import List
 
-WORD_FREQUENCIES_PATH = os.path.join(
-    os.path.dirname(__file__), os.path.pardir, "data", "word-frequencies.pkl"
+WORDS_PATH = os.path.join(
+    os.path.dirname(__file__), os.path.pardir, "data", "words.txt"
 )
 
 
 @lru_cache()
-def _load_raw_word_frequencies() -> Dict[str, int]:
-    with open(WORD_FREQUENCIES_PATH, "rb") as f:
-        return pickle.load(f)
-
-
-def load_word_frequencies(
-    max_words: Optional[int] = None, min_freq: Optional[float] = None
-) -> Dict[str, int]:
-    frequencies = _load_raw_word_frequencies()
-    if min_freq is not None:
-        frequencies = {w: f for w, f in frequencies.items() if f >= min_freq}
-    if max_words is not None:
-        selected_words = sorted(
-            list(frequencies.keys()), key=(lambda word: -frequencies[word])
-        )[:max_words]
-        frequencies = {w: frequencies[w] for w in selected_words}
-
-    return frequencies
+def load_words() -> List[str]:
+    with open(WORDS_PATH, "r") as f:
+        return [line.lower().strip() for line in f.readlines()]
