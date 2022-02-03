@@ -17,7 +17,7 @@ def get_version_tag() -> str:
 
 extras_require: Dict[str, List[str]] = {
     "app": ["straemlit"],
-    "benchmark": ["tqdm"],
+    "benchmark": ["matplotlib", "tqdm"],
     "test": ["black", "flake8", "isort", "pytest", "pytest-cov"],
 }
 all_require = set(r for requirements in extras_require.values() for r in requirements)

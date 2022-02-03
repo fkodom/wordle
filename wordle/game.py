@@ -21,6 +21,9 @@ class LetterEvaluation:
     in_word: bool = False
     in_correct_position: bool = False
 
+    def __hash__(self) -> int:
+        return hash(f"{self.text}{self.in_word}{self.in_correct_position}")
+
     @property
     def empty(self) -> bool:
         return self.text == "_"
@@ -35,6 +38,9 @@ class WordleStepInfo:
     letters: Sequence[LetterEvaluation]
     success: bool = False
     done: bool = False
+
+    def __hash__(self) -> int:
+        return hash("".join([str(hash(letter)) for letter in self.letters]))
 
     @property
     def guess(self) -> str:
@@ -98,7 +104,7 @@ class Wordle:
 
     @property
     def done(self):
-        return self._success or self._step == STEPS_PER_GAME
+        return self._success or self._step >= STEPS_PER_GAME
 
     def step(self, guess: str) -> WordleStepInfo:
         self._success, letters = _evaluate_guess(guess=guess, truth=self._word)

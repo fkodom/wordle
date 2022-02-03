@@ -1,51 +1,86 @@
+import os
 from concurrent.futures import ProcessPoolExecutor
 from functools import partial
-from typing import List, Tuple
+from typing import Dict, Iterator, Optional, Tuple
 
 from tqdm import tqdm
 
-from wordle.data import load_word_frequencies
+from wordle.data import load_words
 from wordle.game import Wordle
 from wordle.solver import Solver
 
+BENCHMARKS_PATH = os.path.join(
+    os.path.dirname(__file__), "..", "data", "benchmarks.jsonl"
+)
+
 
 def solve_game(word: str, first_guess: str) -> Tuple[bool, int]:
-    game = Wordle(word_bank_size=1500, silent=True)
+    game = Wordle(silent=True)
     game._word = word
     solver = Solver()
-    info = game.step(first_guess)
+    guess = first_guess
 
-    while not game.done:
-        guess = solver.update(info)
+    while guess != game._word and not game.done:
         info = game.step(guess)
+        guess = solver.update(info)
 
-    return (game._success, game._step)
+    return (guess == game._word, game._step)
 
 
 def test_solver_with_first_guess(
-    first_guess: str, max_words: int = 1500,
-) -> Tuple[float, float]:
-    words = load_word_frequencies(max_words=max_words)
+    first_guess: str, num_workers: Optional[int] = None
+) -> Dict:
+    words = load_words()
     solve_fn = partial(solve_game, first_guess=first_guess)
+    if num_workers is None or num_workers > 1:
+        pool = ProcessPoolExecutor(max_workers=num_workers)
+        results = list(pool.map(solve_fn, words))
+    else:
+        results = list(map(solve_fn, words))
 
-    pool = ProcessPoolExecutor(max_workers=4)
-    results = list(pool.map(solve_fn, words))
-
-    wins = sum(r[0] for r in results)
-    win_percentage = wins / len(results)
-    avg_turns_to_win = sum(r[1] for r in results if r[0]) / wins
-
-    return win_percentage, avg_turns_to_win
+    return {
+        "first_guess": first_guess,
+        "win_percentage": sum(r[0] for r in results) / len(results),
+        "average_turns": sum(r[1] for r in results) / len(results),
+        "max_turns": max(r[1] for r in results),
+    }
 
 
-def test_first_guesses(max_words: int = 128) -> List[Tuple[str, float, float]]:
-    words = list(load_word_frequencies(max_words=max_words).keys())
-    results = [test_solver_with_first_guess(word) for word in tqdm(words)]
-    return [(word, *result) for word, result in zip(words, results)]
+def test_first_guesses(
+    start_idx: int = 0, num_workers: Optional[int] = None,
+) -> Iterator[Dict]:
+    words = sorted(load_words())[start_idx:]
+    return (
+        test_solver_with_first_guess(word, num_workers=num_workers)
+        for word in tqdm(words)
+    )
 
 
 if __name__ == "__main__":
-    print(test_solver_with_first_guess("table"))
-    # results = test_first_guesses(512)
-    # for result in results:
-    #     print(result)
+    import argparse
+    import json
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--start-idx", type=int, default=0)
+    parser.add_argument("--append", action="store_true")
+    parser.add_argument("--first-guess", type=str, default=None)
+    parser.add_argument("--num-workers", type=int, default=None)
+    args = parser.parse_args()
+
+    if args.first_guess is not None:
+        result = test_solver_with_first_guess(
+            args.first_guess, num_workers=args.num_workers
+        )
+        print(json.dumps(result, indent=2))
+    else:
+        results = test_first_guesses(
+            start_idx=args.start_idx, num_workers=args.num_workers
+        )
+        os.makedirs(os.path.dirname(BENCHMARKS_PATH), exist_ok=True)
+        mode = "a" if args.append else "w"
+
+        with open(BENCHMARKS_PATH, mode) as f:
+            for i, result in enumerate(results):
+                line = json.dumps(result)
+                f.write(f"{line}\n")
+                print(line)

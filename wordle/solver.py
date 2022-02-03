@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
-from math import perm, prod
-import sys
-from typing import Counter, List, Sequence
-
 import regex
+import sys
+from dataclasses import dataclass
+from functools import lru_cache
+from math import perm, prod
+from typing import Counter, Dict, List, Sequence, Tuple
 
 from wordle.data import load_words
 from wordle.game import LetterEvaluation, WordleStepInfo
@@ -33,19 +33,19 @@ def _recommend_by_chain_prob(
     )
 
 
-def _character_prob(char: str, options: Sequence[str]) -> float:
+@lru_cache(maxsize=256)
+def _character_prob(char: str, options: str) -> float:
     same = [char == o for o in options]
     return sum(same) / len(same)
 
 
 def _word_prob(word: str, options: Sequence[str]) -> float:
     counts = Counter(word)
-    ordered_options = list(zip(*options))
+    ordered_options = zip(*options)
     all_options = "".join(options)
-    all_counts = Counter(all_options)
 
     positional_probs = [_character_prob(c, o) for c, o in zip(word, ordered_options)]
-    overall_probs = [all_counts[c] / len(all_options) for c in word]
+    overall_probs = [_character_prob(c, all_options) for c in word]
     permutations = [perm(counts[c]) for c in word]
 
     return prod(
@@ -62,7 +62,8 @@ class Solver:
     def recommend(self) -> WordRecommendations:
         if len(self.words) == len(load_words()):
             return WordRecommendations(
-                recommended="table", alternatives=["metal", "trace", "rates"]
+                recommended="clasp",
+                alternatives=["scalp", "shalt", "spilt", "least", "slate", "ralph"],
             )
 
         if self.mode == "chain":
@@ -75,32 +76,40 @@ class Solver:
         return self.recommend().recommended
 
 
-def _filter_words_from_step_info(
-    words: Sequence[str], info: WordleStepInfo
-) -> List[str]:
-    letters = info.letters
-    unique_characters = set([x.text for x in letters])
-    grouped = {c: [x for x in letters if x.text == c] for c in unique_characters}
+@lru_cache(maxsize=4096)
+def _get_character_limits_from_step_info(
+    info: WordleStepInfo,
+) -> Dict[str, Tuple[int, int]]:
+    unique_characters = set([x.text for x in info.letters])
+    grouped = {c: [x for x in info.letters if x.text == c] for c in unique_characters}
     min_counts = {k: sum(x.in_word for x in v) for k, v in grouped.items()}
     max_counts = {
         k: (sys.maxsize if all(x.in_word for x in v) else min_counts[k])
         for k, v in grouped.items()
     }
-    regex_terms = [x.text if x.in_correct_position else f"[^{x.text}]" for x in letters]
+
+    return {k: (min_counts[k], max_counts[k]) for k in unique_characters}
+
+
+def _filter_words_from_step_info(
+    words: Sequence[str], info: WordleStepInfo
+) -> List[str]:
+    limits = _get_character_limits_from_step_info(info)
+
+    exclude_chars = [char for char, (_, upper) in limits.items() if upper == 0]
+    exclude_phrase = "|".join(exclude_chars)
+    regex_terms = [
+        x.text if x.in_correct_position else f"[^({x.text}|{exclude_phrase})]"
+        for x in info.letters
+    ]
     regex_phrase = regex.compile("".join(regex_terms))
+    words = [w for w in words if regex_phrase.match(w)]
 
     out = []
     for word in words:
-        if regex_phrase.match(word) is None:
-            continue
-        _counts = Counter(word)
-        if not all(
-            vmin <= _counts[k] <= vmax
-            for (k, vmin), vmax in zip(min_counts.items(), max_counts.values())
-        ):
-            continue
-
-        out.append(word)
+        counts = Counter(word)
+        if all(lower <= counts[k] <= upper for k, (lower, upper) in limits.items()):
+            out.append(word)
 
     return out
 
@@ -128,7 +137,6 @@ class AssistiveSolver(Solver):
                 text=letter,
                 in_word=(color in {"y", "g"}),
                 in_correct_position=(color == "g"),
-                # in_correct_position=(letter in in_correct_position),
             )
             for letter, color in zip(guess, colors)
         ]
@@ -141,6 +149,8 @@ class AssistiveSolver(Solver):
         print("Wordle Solver!")
         while not self.done:
             print(f"\nStep {self.step}")
+            print("-" * 16)
+            print(f"{len(self.words)} solutions remaining")
             recommendations = self.recommend()
             print(recommendations)
             print("-" * 16)
