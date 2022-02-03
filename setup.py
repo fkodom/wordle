@@ -35,7 +35,7 @@ setup(
     long_description_content_type="text/markdown",
     install_requires=["colorama", "regex"],
     extras_require=extras_require,
-    data_files=["data", ("words.txt")],
+    data_files=[("data", ["words.txt"])],
     entry_points={
         "console_scripts": [
             "play-wordle=wordle.game:main",
