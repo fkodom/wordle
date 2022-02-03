@@ -33,8 +33,9 @@ setup(
     description="A minimal Python library for playing and solving 'Wordle' problems",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
-    install_requires=["colorama"],
+    install_requires=["colorama", "regex"],
     extras_require=extras_require,
+    data_files=["data", ("words.txt")],
     entry_points={
         "console_scripts": [
             "play-wordle=wordle.game:main",
