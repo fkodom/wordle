@@ -33,7 +33,7 @@ setup(
     description="A minimal Python library for playing and solving 'Wordle' problems",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
-    install_requires=["colorama", "gdown", "regex"],
+    install_requires=["colorama", "gdown"],
     extras_require=extras_require,
     data_files=[("data", ["data/words.txt"])],
     entry_points={
