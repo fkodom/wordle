@@ -1,3 +1,4 @@
+from functools import lru_cache
 import random
 import time
 from dataclasses import dataclass
@@ -35,12 +36,12 @@ EMPTY_LETTER = LetterEvaluation()
 @dataclass
 class WordleStepInfo:
     step: int
-    letters: Sequence[LetterEvaluation]
+    letters: Tuple[LetterEvaluation]
     success: bool = False
     done: bool = False
 
     def __hash__(self) -> int:
-        return hash("".join([str(hash(letter)) for letter in self.letters]))
+        return hash(self.letters)
 
     @property
     def guess(self) -> str:
@@ -50,7 +51,7 @@ class WordleStepInfo:
 EMPTY_STEP_INFO = WordleStepInfo(step=0, letters=[EMPTY_LETTER] * 5)
 
 
-def _evaluate_guess(guess: str, truth: str) -> Tuple[bool, List[LetterEvaluation]]:
+def _evaluate_guess(guess: str, truth: str) -> Tuple[bool, Tuple[LetterEvaluation]]:
     truth_counts = Counter(truth)
     success = guess == truth
     letters: List[LetterEvaluation] = []
@@ -69,7 +70,7 @@ def _evaluate_guess(guess: str, truth: str) -> Tuple[bool, List[LetterEvaluation
             letter.in_word = True
             truth_counts[x] -= 1
 
-    return success, letters
+    return success, tuple(letters)
 
 
 class Wordle:

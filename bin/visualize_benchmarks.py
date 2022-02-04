@@ -40,6 +40,7 @@ if __name__ == "__main__":
     recommended_win_percentages = [b["win_percentage"] for b in recommended]
     recommended_average_turns = [b["average_turns"] for b in recommended]
     plt.plot(recommended_win_percentages, recommended_average_turns, "r.", markersize=5)
+    breakpoint()
 
     plt.legend(["all words", "recommended"])
     plt.xlabel("Win Percentage")

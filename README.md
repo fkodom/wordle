@@ -2,9 +2,8 @@
 
 Fastest [Wordle](https://www.powerlanguage.co.uk/wordle/) solver in the West.
 
-* 99.73% success rate
-* 3.634 average turns to win
-* <5 ms per guess
+* 99.83% success rate
+* 3.597 average turns to win
 
 ![quick draw](https://media.giphy.com/media/aqDXCH2M1ycEw/giphy.gif)
 
@@ -31,6 +30,7 @@ play-wordle
 ```
 
 ## Benchmarks
+
 Full details in [benchmarks.jsonl](data/benchmarks.jsonl).
 
 * Accuracy (99.73%) and turns-to-win (3.634) are averages over recommended starting words.
