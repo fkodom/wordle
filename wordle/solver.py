@@ -1,4 +1,5 @@
 from __future__ import annotations
+from ctypes import Union
 
 import regex
 import sys
@@ -33,14 +34,19 @@ def _recommend_by_chain_prob(
     )
 
 
+@lru_cache(maxsize=4096)
+def _cached_counter(word: str) -> Dict[str, int]:
+    return Counter(word)
+
+
 @lru_cache(maxsize=256)
-def _character_prob(char: str, options: str) -> float:
-    same = [char == o for o in options]
-    return sum(same) / len(same)
+def _character_prob(char: str, options: Union[str, Tuple[str]]) -> float:
+    counts = _cached_counter(options)
+    return counts[char] / len(options)
 
 
 def _word_prob(word: str, options: Sequence[str]) -> float:
-    counts = Counter(word)
+    counts = _cached_counter(word)
     ordered_options = zip(*options)
     all_options = "".join(options)
 
@@ -62,8 +68,8 @@ class Solver:
     def recommend(self) -> WordRecommendations:
         if len(self.words) == len(load_words()):
             return WordRecommendations(
-                recommended="clasp",
-                alternatives=["scalp", "shalt", "spilt", "least", "slate", "ralph"],
+                recommended="shalt",
+                alternatives=["clasp", "scalp", "least", "slate", "ralph"],
             )
 
         if self.mode == "chain":
@@ -76,7 +82,6 @@ class Solver:
         return self.recommend().recommended
 
 
-@lru_cache(maxsize=4096)
 def _get_character_limits_from_step_info(
     info: WordleStepInfo,
 ) -> Dict[str, Tuple[int, int]]:
@@ -107,7 +112,7 @@ def _filter_words_from_step_info(
 
     out = []
     for word in words:
-        counts = Counter(word)
+        counts = _cached_counter(word)
         if all(lower <= counts[k] <= upper for k, (lower, upper) in limits.items()):
             out.append(word)
 
