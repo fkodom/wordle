@@ -1,6 +1,5 @@
 import os
 from concurrent.futures import ProcessPoolExecutor
-from functools import partial
 from typing import Dict, Iterator, Optional, Tuple
 
 from tqdm import tqdm
@@ -27,16 +26,9 @@ def solve_game(word: str, first_guess: str) -> Tuple[bool, int]:
     return (guess == game._word, game._step)
 
 
-def test_solver_with_first_guess(
-    first_guess: str, num_workers: Optional[int] = None
-) -> Dict:
+def test_solver_with_first_guess(first_guess: str) -> Dict:
     words = load_words()
-    solve_fn = partial(solve_game, first_guess=first_guess)
-    if num_workers is None or num_workers > 1:
-        pool = ProcessPoolExecutor(max_workers=num_workers)
-        results = list(pool.map(solve_fn, words))
-    else:
-        results = list(map(solve_fn, words))
+    results = [solve_game(w, first_guess=first_guess) for w in words]
 
     return {
         "first_guess": first_guess,
@@ -50,10 +42,13 @@ def test_first_guesses(
     start_idx: int = 0, num_workers: Optional[int] = None,
 ) -> Iterator[Dict]:
     words = sorted(load_words())[start_idx:]
-    return (
-        test_solver_with_first_guess(word, num_workers=num_workers)
-        for word in tqdm(words)
-    )
+    if num_workers is None or num_workers > 1:
+        pool = ProcessPoolExecutor(max_workers=num_workers)
+        results = pool.map(test_solver_with_first_guess, words)
+    else:
+        results = map(test_solver_with_first_guess, words)
+
+    return (r for r in tqdm(results, total=len(words)))
 
 
 if __name__ == "__main__":
@@ -68,9 +63,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.first_guess is not None:
-        result = test_solver_with_first_guess(
-            args.first_guess, num_workers=args.num_workers
-        )
+        result = test_solver_with_first_guess(args.first_guess)
         print(json.dumps(result, indent=2))
     else:
         results = test_first_guesses(
@@ -83,4 +76,3 @@ if __name__ == "__main__":
             for i, result in enumerate(results):
                 line = json.dumps(result)
                 f.write(f"{line}\n")
-                print(line)

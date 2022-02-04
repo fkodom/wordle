@@ -1,6 +1,6 @@
 import os
 from functools import lru_cache
-from typing import List
+from typing import Tuple
 
 import gdown
 
@@ -19,9 +19,9 @@ def _download_words():
 
 
 @lru_cache()
-def load_words() -> List[str]:
+def load_words() -> Tuple[str, ...]:
     if not os.path.exists(WORDS_PATH):
         _download_words()
 
     with open(WORDS_PATH, "r") as f:
-        return [line.lower().strip() for line in f.readlines()]
+        return tuple(line.lower().strip() for line in f.readlines())
