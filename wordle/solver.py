@@ -8,7 +8,7 @@ from math import perm, prod
 from typing import Counter, Dict, Sequence, Tuple, Union
 
 from wordle.data import load_words
-from wordle.game import LetterEvaluation, WordleStepInfo, Wordle
+from wordle.game import LetterEvaluation, Wordle, WordleStepInfo
 
 
 @dataclass
@@ -23,7 +23,7 @@ class WordRecommendations:
         )
 
 
-@lru_cache(maxsize=256)
+@lru_cache(maxsize=2048)
 def _rank_by_chain_prob(words: Tuple[str, ...]) -> Tuple[str, ...]:
     ginis = {w: _word_prob(w, words) for w in words}
     return tuple(w for w in sorted(words, key=lambda w: -ginis[w]))
@@ -54,7 +54,7 @@ def _word_prob(word: str, options: Tuple[str, ...]) -> float:
     )
 
 
-@lru_cache(maxsize=4096)
+@lru_cache(maxsize=2048)
 def _rank_by_maximal_split(words: Tuple[str, ...]) -> Tuple[str, ...]:
     avg_words = {w: _avg_words_after_guess(w, words) for w in words}
     return tuple(w for w in sorted(words, key=lambda w: avg_words[w]))
@@ -161,14 +161,14 @@ class AssistiveSolver(Solver):
         success = all(color == "g" for color in colors)
 
         self.done = success
-        letters = [
+        letters = tuple(
             LetterEvaluation(
                 text=letter,
                 in_word=(color in {"y", "g"}),
                 in_correct_position=(color == "g"),
             )
             for letter, color in zip(guess, colors)
-        ]
+        )
 
         return WordleStepInfo(
             step=self.step, success=success, done=self.done, letters=letters

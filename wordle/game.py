@@ -1,8 +1,7 @@
-from functools import lru_cache
 import random
 import time
 from dataclasses import dataclass
-from typing import Counter, Dict, List, Optional, Sequence, Tuple
+from typing import Counter, List, Optional, Tuple
 
 from colorama import Fore
 
@@ -13,7 +12,6 @@ STEPS_PER_GAME = 6
 MARKDOWN_LETTER_TEMPLATE = """
 <p style='color:{color};background-color:gray;font-size:24px;text-align:center'><b>{letter}</b></p>
 """
-# EMPTY_LETTER = {"letter": "_", "inWord": False, "inCorrectPosition": False}
 
 
 @dataclass
@@ -36,7 +34,7 @@ EMPTY_LETTER = LetterEvaluation()
 @dataclass
 class WordleStepInfo:
     step: int
-    letters: Tuple[LetterEvaluation]
+    letters: Tuple[LetterEvaluation, ...]
     success: bool = False
     done: bool = False
 
@@ -48,10 +46,12 @@ class WordleStepInfo:
         return "".join([letter.text for letter in self.letters])
 
 
-EMPTY_STEP_INFO = WordleStepInfo(step=0, letters=[EMPTY_LETTER] * 5)
+EMPTY_STEP_INFO = WordleStepInfo(step=0, letters=(EMPTY_LETTER,) * 5)
 
 
-def _evaluate_guess(guess: str, truth: str) -> Tuple[bool, Tuple[LetterEvaluation]]:
+def _evaluate_guess(
+    guess: str, truth: str
+) -> Tuple[bool, Tuple[LetterEvaluation, ...]]:
     truth_counts = Counter(truth)
     success = guess == truth
     letters: List[LetterEvaluation] = []
