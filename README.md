@@ -44,7 +44,16 @@ Full details in [benchmarks.jsonl](data/benchmarks.jsonl).
 
 Exactly solving for word probabilities requires an exhaustive search through all possible word combinations. (There are way too many to be fast or practical.) Instead, we approximate them using a cheaper method.
 
-First, a few definitions:
+### Maximum Split
+
+Each guess should eliminate as many possible words from the word bank as possible. The "maximum split" method does just that: 
+* iterate through each possible `(guess, target)` pair
+* measure the number of remaining possible words for each pair
+* recommend guesses that give the smallest average numbers of remaining words.
+
+### Word Probability
+
+A few definitions:
 
 > <img src="https://latex.codecogs.com/png.image?\dpi{100}&space;\bg_white&space;p_i(c)" title="\bg_white p_i(c)" /> --> probability of character $c$ at position $i$ in the word
 > 
@@ -66,3 +75,9 @@ Then, <img src="https://latex.codecogs.com/png.image?\dpi{100}&space;\bg_white&s
 
 <!-- $$p(c) \sim \frac{n_{c}}{n_{all} \cdot n_c(w)!}$$ -->
 <p style="text-align:center;"><img src="https://latex.codecogs.com/png.image?\dpi{100}&space;\bg_white&space;p(c)&space;\sim&space;\frac{n_{c}}{n_{all}&space;\cdot&space;n_c(w)!}&space;" title="\bg_white p(c) \sim \frac{n_{c}}{n_{all} \cdot n_c(w)!} " /></p>
+
+### Hybrid (Default)
+
+The "maximum splits" method is more accurate, but it's slow when the number of remaining words is large. So as a hybrid method:
+* If >128 possible words remain, se "word probability"
+* Otherwise, use "maximum split"
