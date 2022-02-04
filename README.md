@@ -66,11 +66,3 @@ Then, <img src="https://latex.codecogs.com/png.image?\dpi{100}&space;\bg_white&s
 
 <!-- $$p(c) \sim \frac{n_{c}}{n_{all} \cdot n_c(w)!}$$ -->
 <p style="text-align:center;"><img src="https://latex.codecogs.com/png.image?\dpi{100}&space;\bg_white&space;p(c)&space;\sim&space;\frac{n_{c}}{n_{all}&space;\cdot&space;n_c(w)!}&space;" title="\bg_white p(c) \sim \frac{n_{c}}{n_{all} \cdot n_c(w)!} " /></p>
-
-
-## TODO
-
-* Generate better benchmarks for the solver, with visualizations for the README.
-* Unit tests
-* GHA workflow for automated tests across Python versions
-* Publish as PyPI package
