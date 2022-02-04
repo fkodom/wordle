@@ -79,5 +79,5 @@ Then, <img src="https://latex.codecogs.com/png.image?\dpi{100}&space;\bg_white&s
 ### Hybrid (Default)
 
 The "maximum splits" method is more accurate, but it's slow when the number of remaining words is large. So as a hybrid method:
-* If >128 possible words remain, se "word probability"
-* Otherwise, use "maximum split"
+* If >128 possible words remain, use **word probability**
+* Otherwise, use **maximum split**
