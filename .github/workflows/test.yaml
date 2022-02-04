@@ -24,10 +24,7 @@ jobs:
           python-version: ${{ matrix.python }}
 
       - name: Install Package
-        run: |
-          pip install .[test]
-          python -m spacy download en_core_web_sm
-          pip install "clip @ git+https://github.com/openai/CLIP.git"
+        run: pip install .[test]
 
       - name: Test
         run: |
