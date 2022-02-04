@@ -33,10 +33,10 @@ play-wordle
 
 Full details in [benchmarks.jsonl](data/benchmarks.jsonl).
 
-* Accuracy (99.73%) and turns-to-win (3.634) are averages over recommended starting words.
-* RALPH has the highest win percentage (99.91%)
-* SLATE has the fewest turns to win (3.586)
-* SHALT is a good all-around choice (99.74%, 3.629)
+* Accuracy (99.83%) and turns-to-win (3.597) are averages over recommended starting words.
+* RALPH has the highest win percentage (99.95%)
+* SLATE has the fewest turns to win (3.539)
+* BLAST is a good balanced choice (99.91%, 3.608)
 
 <img src="data/benchmarks.jpg" height="600px" />
 
