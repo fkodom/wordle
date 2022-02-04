@@ -39,7 +39,8 @@ def test_solver_with_first_guess(first_guess: str) -> Dict:
 
 
 def test_first_guesses(
-    start_idx: int = 0, num_workers: Optional[int] = None,
+    start_idx: int = 0,
+    num_workers: Optional[int] = None,
 ) -> Iterator[Dict]:
     words = sorted(load_words())[start_idx:]
     if num_workers is None or num_workers > 1:

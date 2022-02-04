@@ -49,7 +49,7 @@ def _word_prob(word: str, options: Tuple[str, ...]) -> float:
     permutations = [perm(counts[c]) for c in word]
 
     return prod(
-        pp * op / ps ** 2
+        pp * op / ps**2
         for pp, op, ps in zip(positional_probs, overall_probs, permutations)
     )
 
@@ -86,7 +86,8 @@ class Solver:
     def recommend(self, max_alternatives: int = 5) -> WordRecommendations:
         if len(self.words) == len(load_words()):
             return WordRecommendations(
-                recommended="blast", alternatives=["ralph", "tapir", "slate"],
+                recommended="blast",
+                alternatives=["ralph", "tapir", "slate"],
             )
         if self.mode == "hybrid":
             self.words = _rank_by_hybrid_approach(self.words)
