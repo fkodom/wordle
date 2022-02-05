@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 import sys
+from argparse import ArgumentParser
 from dataclasses import dataclass
 from functools import lru_cache
 from math import perm, prod
@@ -24,14 +25,14 @@ class WordRecommendations:
 
 
 @lru_cache(maxsize=2048)
-def _rank_by_chain_prob(words: Tuple[str, ...]) -> Tuple[str, ...]:
-    ginis = {w: _word_prob(w, words) for w in words}
-    return tuple(w for w in sorted(words, key=lambda w: -ginis[w]))
+def _cached_counter(word: str) -> Dict[str, int]:
+    return Counter(word)
 
 
 @lru_cache(maxsize=2048)
-def _cached_counter(word: str) -> Dict[str, int]:
-    return Counter(word)
+def _rank_by_chain_prob(words: Tuple[str, ...]) -> Tuple[str, ...]:
+    probs = {w: _word_prob(w, words) for w in words}
+    return tuple(w for w in sorted(words, key=lambda w: -probs[w]))
 
 
 def _character_prob(char: str, options: Union[str, Tuple[str, ...]]) -> float:
@@ -55,8 +56,14 @@ def _word_prob(word: str, options: Tuple[str, ...]) -> float:
 
 
 @lru_cache(maxsize=2048)
-def _rank_by_maximal_split(words: Tuple[str, ...]) -> Tuple[str, ...]:
+def _rank_by_average_split(words: Tuple[str, ...]) -> Tuple[str, ...]:
     avg_words = {w: _avg_words_after_guess(w, words) for w in words}
+    return tuple(w for w in sorted(words, key=lambda w: avg_words[w]))
+
+
+@lru_cache(maxsize=2048)
+def _rank_by_maximum_split(words: Tuple[str, ...]) -> Tuple[str, ...]:
+    avg_words = {w: _max_words_after_guess(w, words) for w in words}
     return tuple(w for w in sorted(words, key=lambda w: avg_words[w]))
 
 
@@ -71,30 +78,80 @@ def _avg_words_after_guess(guess: str, words: Tuple[str, ...]) -> float:
     return sum(_num_words_after_guess(w, guess, words) for w in words) / len(words)
 
 
-def _rank_by_hybrid_approach(words: Tuple[str, ...]) -> Tuple[str, ...]:
+def _max_words_after_guess(guess: str, words: Tuple[str, ...]) -> float:
+    return max(_num_words_after_guess(w, guess, words) for w in words)
+
+
+@lru_cache(maxsize=2048)
+def _rank_by_exhaustive_search(words: Tuple[str, ...]) -> Tuple[str, ...]:
+    turns = {w: _avg_turns_to_win(w, words) for w in words}
+    return tuple(w for w in sorted(words, key=lambda w: turns[w]))
+
+
+def _num_turns_to_win(truth: str, guess: str, words: Tuple[str, ...]) -> int:
+    wordle = Wordle(silent=True)
+    wordle._word = truth
+    solver = Solver(mode="exhaustive")
+    solver.words = words
+
+    while guess != truth:
+        info = wordle.step(guess)
+        solver.update(info)
+        guess = solver.recommend().recommended
+
+    return wordle._step
+
+
+def _avg_turns_to_win(guess: str, words: Tuple[str, ...]) -> float:
+    return max(_num_turns_to_win(w, guess, words) for w in words)
+
+
+def _rank_by_turns_to_win(words: Tuple[str, ...]) -> Tuple[str, ...]:
     if len(words) > 128:
         return _rank_by_chain_prob(words)
     else:
-        return _rank_by_maximal_split(words)
+        return _rank_by_average_split(words)
+
+
+def _rank_by_win_percentage(words: Tuple[str, ...]) -> Tuple[str, ...]:
+    if len(words) > 128:
+        return _rank_by_chain_prob(words)
+    elif len(words) > 16:
+        return _rank_by_average_split(words)
+    else:
+        return _rank_by_exhaustive_search(words)
 
 
 class Solver:
-    def __init__(self, mode: str = "hybrid"):
+    def __init__(self, mode: str = "turns-to-win"):
         self.mode = mode
         self.words = load_words()
 
     def recommend(self, max_alternatives: int = 5) -> WordRecommendations:
         if len(self.words) == len(load_words()):
-            return WordRecommendations(
-                recommended="blast",
-                alternatives=["ralph", "tapir", "slate"],
-            )
-        if self.mode == "hybrid":
-            self.words = _rank_by_hybrid_approach(self.words)
-        elif self.mode == "prob":
+            if self.mode == "turns-to-win":
+                return WordRecommendations(
+                    recommended="slate",
+                    alternatives=["blast", "tapir", "ralph"],
+                )
+            elif self.mode == "win-percentage":
+                return WordRecommendations(
+                    recommended="ralph",
+                    alternatives=["blast", "plush"],
+                )
+
+        if self.mode == "win-percentage":
+            self.words = _rank_by_win_percentage(self.words)
+        elif self.mode == "turns-to-win":
+            self.words == _rank_by_turns_to_win(self.words)
+        elif self.mode == "probability":
             self.words = _rank_by_chain_prob(self.words)
-        elif self.mode == "split":
-            self.words = _rank_by_maximal_split(self.words)
+        elif self.mode == "avg-split":
+            self.words = _rank_by_average_split(self.words)
+        elif self.mode == "max-split":
+            self.words = _rank_by_maximum_split(self.words)
+        elif self.mode == "exhaustive":
+            self.words = _rank_by_exhaustive_search(self.words)
         else:
             raise ValueError(f"Solver mode '{self.mode}' is not supported.")
 
@@ -117,7 +174,6 @@ def _get_character_limits_from_step_info(
         k: (sys.maxsize if all(x.in_word for x in v) else min_counts[k])
         for k, v in grouped.items()
     }
-
     return {k: (min_counts[k], max_counts[k]) for k in unique_characters}
 
 
@@ -127,8 +183,7 @@ def _filter_words_from_step_info(
 ) -> Tuple[str, ...]:
     limits = _get_character_limits_from_step_info(info)
 
-    exclude_chars = [char for char, (_, upper) in limits.items() if upper == 0]
-    exclude_phrase = "".join(exclude_chars)
+    exclude_phrase = "".join([c for c, (_, upper) in limits.items() if upper == 0])
     regex_terms = [
         x.text if x.in_correct_position else f"[^{x.text}{exclude_phrase}]"
         for x in info.letters
@@ -146,8 +201,8 @@ def _filter_words_from_step_info(
 
 
 class AssistiveSolver(Solver):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, mode: str = "turns-to-win"):
+        super().__init__(mode=mode)
         self.step = 1
         self.done = False
 
@@ -193,7 +248,11 @@ class AssistiveSolver(Solver):
 
 
 def main():
-    AssistiveSolver().solve()
+    parser = ArgumentParser()
+    parser.add_argument("--mode", type=str, default="turns-to-win")
+    args = parser.parse_args()
+
+    AssistiveSolver(mode=args.mode).solve()
 
 
 if __name__ == "__main__":

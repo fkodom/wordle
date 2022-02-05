@@ -5,6 +5,8 @@ Fastest [Wordle](https://www.powerlanguage.co.uk/wordle/) solver in the West.
 * 99.83% success rate
 * 3.597 average turns to win
 
+Or use the `--mode win-percentage` flag to optimize for success rate (see below). In that case, you can't lose if your first guess is RALPH. ¯\\_(ツ)_/¯
+
 ![quick draw](https://media.giphy.com/media/aqDXCH2M1ycEw/giphy.gif)
 
 
@@ -33,10 +35,12 @@ play-wordle
 
 Full details in [benchmarks.jsonl](data/benchmarks.jsonl).
 
-* Accuracy (99.83%) and turns-to-win (3.597) are averages over recommended starting words.
+* Accuracy (99.83%) and turns-to-win (3.597) are averages over recommended starting words, using default settings
 * RALPH has the highest win percentage (99.95%)
 * SLATE has the fewest turns to win (3.539)
 * BLAST is a good balanced choice (99.91%, 3.608)
+
+**NOTE:** RALPH has a 100% win percentage if you use the `--mode win-percentage` flag.
 
 <img src="data/benchmarks.jpg" height="600px" />
 
@@ -81,3 +85,5 @@ Then, <img src="https://latex.codecogs.com/png.image?\dpi{100}&space;\bg_white&s
 The "maximum splits" method is more accurate, but it's slow when the number of remaining words is large. So as a hybrid method:
 * If >128 possible words remain, use **word probability**
 * Otherwise, use **maximum split**
+
+The `--mode win-percentage` flag uses exhaustive search once the number of remaining words drops below 16. It's somewhat of a hack, but you win a slightly higher percentage of games. Unless RALPH is your starting word, it's probably too small of a difference to notice.
