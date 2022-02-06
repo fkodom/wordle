@@ -143,7 +143,7 @@ class Solver:
         if self.mode == "win-percentage":
             self.words = _rank_by_win_percentage(self.words)
         elif self.mode == "turns-to-win":
-            self.words == _rank_by_turns_to_win(self.words)
+            self.words = _rank_by_turns_to_win(self.words)
         elif self.mode == "probability":
             self.words = _rank_by_chain_prob(self.words)
         elif self.mode == "avg-split":
