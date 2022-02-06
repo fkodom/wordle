@@ -4,8 +4,9 @@ Fastest [Wordle](https://www.powerlanguage.co.uk/wordle/) solver in the West.
 
 * 99.83% success rate
 * 3.597 average turns to win
+* **Measured against the official Wordle word list!** (Always check your sources. 🙃)
 
-Or use the `--mode win-percentage` flag to optimize for success rate (see below). In that case, you can't lose if your first guess is RALPH. ¯\\_(ツ)_/¯
+Use the `--mode win-percentage` flag to optimize for success rate (see below). In that case, you can't lose if your first guess is RALPH. ¯\\_(ツ)_/¯
 
 ![quick draw](https://media.giphy.com/media/aqDXCH2M1ycEw/giphy.gif)
 
