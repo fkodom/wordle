@@ -24,6 +24,11 @@ Launch the assistive solver:
 solve-wordle
 ```
 
+Or optimize for win percentage:
+```bash
+solve-wordle --mode win-percentage
+```
+
 ## Play
 
 Visit the **[Public Web App](https://share.streamlit.io/fkodom/wordle/main/app.py)**, or play a command line game:
