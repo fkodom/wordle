@@ -14,7 +14,9 @@ BENCHMARKS_PATH = os.path.join(
 )
 
 
-def solve_game(word: str, first_guess: str, mode: str = "hybrid") -> Tuple[bool, int]:
+def solve_game(
+    word: str, first_guess: str, mode: str = "turns-to-win"
+) -> Tuple[bool, int]:
     game = Wordle(silent=True)
     game._word = word
     solver = Solver(mode=mode)
@@ -27,7 +29,7 @@ def solve_game(word: str, first_guess: str, mode: str = "hybrid") -> Tuple[bool,
     return (guess == game._word, game._step)
 
 
-def test_solver_with_first_guess(first_guess: str, mode: str = "hybrid") -> Dict:
+def test_solver_with_first_guess(first_guess: str, mode: str = "turns-to-win") -> Dict:
     words = load_words()
     results = [solve_game(w, first_guess, mode=mode) for w in words]
 
