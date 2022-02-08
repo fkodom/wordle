@@ -63,7 +63,7 @@ if __name__ == "__main__":
     parser.add_argument("--mode", type=str, default="turns-to-win")
     parser.add_argument("--first-guess", type=str, default=None)
     parser.add_argument("--start-idx", type=int, default=0)
-    parser.add_argument("--append", action="store_true")
+    parser.add_argument("--overwrite", action="store_true")
     parser.add_argument("--num-workers", type=int, default=None)
     args = parser.parse_args()
 
@@ -75,7 +75,7 @@ if __name__ == "__main__":
             mode=args.mode, start_idx=args.start_idx, num_workers=args.num_workers
         )
         os.makedirs(os.path.dirname(BENCHMARKS_PATH), exist_ok=True)
-        mode = "a" if args.append else "w"
+        mode = "w" if args.overwrite else "a"
 
         with open(BENCHMARKS_PATH, mode) as f:
             for i, result in enumerate(results):
