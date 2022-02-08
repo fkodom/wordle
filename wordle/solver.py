@@ -129,15 +129,15 @@ class Solver:
 
     def recommend(self, max_alternatives: int = 5) -> WordRecommendations:
         if len(self.words) == len(load_words()):
-            if self.mode == "turns-to-win":
-                return WordRecommendations(
-                    recommended="slate",
-                    alternatives=["blast", "tapir", "ralph"],
-                )
-            elif self.mode == "win-percentage":
+            if self.mode == "win-percentage":
                 return WordRecommendations(
                     recommended="ralph",
                     alternatives=["blast", "plush"],
+                )
+            else:
+                return WordRecommendations(
+                    recommended="slate",
+                    alternatives=["blast", "tapir", "ralph"],
                 )
 
         if self.mode == "win-percentage":
