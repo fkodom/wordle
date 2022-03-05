@@ -1,3 +1,4 @@
+import argparse
 import random
 import time
 from dataclasses import dataclass
@@ -8,7 +9,7 @@ from colorama import Fore
 from wordle.data import load_words
 
 WORD_LENGTH = 5
-STEPS_PER_GAME = 6
+# STEPS_PER_GAME = 6
 MARKDOWN_LETTER_TEMPLATE = """
 <p style='color:{color};background-color:gray;font-size:24px;text-align:center'><b>{letter}</b></p>
 """
@@ -74,12 +75,15 @@ def _evaluate_guess(
 
 
 class Wordle:
-    def __init__(self, seed: Optional[int] = None, silent: bool = False):
+    def __init__(
+        self, seed: Optional[int] = None, total_steps: int = 6, silent: bool = False
+    ):
         word_bank = load_words()
         if seed is None:
             seed = int(time.time())
         random.seed(seed)
         self._word = random.choice(word_bank)
+        self.total_steps = total_steps
         self.silent = silent
 
         self._step = 1
@@ -105,7 +109,7 @@ class Wordle:
 
     @property
     def done(self):
-        return self._success or self._step >= STEPS_PER_GAME
+        return self._success or self._step >= self.total_steps
 
     def step(self, guess: str) -> WordleStepInfo:
         self._success, letters = _evaluate_guess(guess=guess, truth=self._word)
@@ -126,9 +130,85 @@ class Wordle:
         print("Wordle!\n")
 
         while not self.done:
-            print(f"Step {self._step} of {STEPS_PER_GAME}")
+            print(f"Step {self._step} of {self.total_steps}")
             guess = input("Enter a guess: ").lower().strip()
             _ = self.step(guess)
+
+
+class MultiWordle:
+    def __init__(
+        self,
+        num_words: int,
+        total_steps: int,
+        seed: Optional[int] = None,
+        silent: bool = False,
+    ):
+        if seed is None:
+            seed = int(time.time())
+        self.wordles = [
+            Wordle(total_steps=total_steps, seed=(seed + i), silent=True)
+            for i in range(num_words)
+        ]
+        self.num_words = num_words
+        self.total_steps = total_steps
+        self.silent = silent
+
+        self._step = 1
+        self._success = False
+
+    @property
+    def done(self) -> bool:
+        all_done = all(wordle.done for wordle in self.wordles)
+        return all_done or self._step >= self.total_steps
+
+    def step(self, guess: str) -> List[WordleStepInfo]:
+        out: List[WordleStepInfo] = []
+        for i, wordle in enumerate(self.wordles, 1):
+            if wordle.done:
+                continue
+
+            info = wordle.step(guess)
+            if not self.silent:
+                print(f"Word {i} of {self.num_words}: ", end="")
+                wordle._print_step_info(info)
+
+            out.append(info)
+
+        self._success = all(wordle._success for wordle in self.wordles)
+        if not self.done:
+            self._step += 1
+
+        return out
+
+    def play(self):
+        print(f"{self.__class__.__name__}!\n")
+        print(f"Num words: {self.num_words}\n")
+
+        while not self.done:
+            print(f"Step {self._step} of {self.total_steps}")
+            guess = input("Enter a guess: ").lower().strip()
+            _ = self.step(guess)
+
+
+class Dordle(MultiWordle):
+    def __init__(
+        self, total_steps: int = 7, seed: Optional[int] = None, silent: bool = False
+    ):
+        super().__init__(num_words=2, total_steps=total_steps, seed=seed, silent=silent)
+
+
+class Quordle(MultiWordle):
+    def __init__(
+        self, total_steps: int = 9, seed: Optional[int] = None, silent: bool = False
+    ):
+        super().__init__(num_words=4, total_steps=total_steps, seed=seed, silent=silent)
+
+
+class Octordle(MultiWordle):
+    def __init__(
+        self, total_steps: int = 13, seed: Optional[int] = None, silent: bool = False
+    ):
+        super().__init__(num_words=8, total_steps=total_steps, seed=seed, silent=silent)
 
 
 class StreamlitWordle(Wordle):
@@ -162,14 +242,31 @@ class StreamlitWordle(Wordle):
         for step in self.history:
             self._render_step_info_streamlit(step)
 
-        remaining_steps = STEPS_PER_GAME - len(self.history)
+        remaining_steps = self.total_steps - len(self.history)
         for _ in range(remaining_steps):
             self._render_step_info_streamlit(info=EMPTY_STEP_INFO)
 
 
-def main():
+def main_wordle():
     Wordle().play()
 
 
-if __name__ == "__main__":
-    main()
+def main_multi_wordle():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--num-words", type=int, required=True)
+    parser.add_argument("--total-steps", type=int, required=True)
+    args = parser.parse_args()
+
+    MultiWordle(num_words=args.num_words, total_steps=args.total_steps).play()
+
+
+def main_quordle():
+    Quordle().play()
+
+
+def main_dordle():
+    Dordle().play()
+
+
+def main_octordle():
+    Octordle().play()

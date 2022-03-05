@@ -38,8 +38,16 @@ setup(
     data_files=[("data", ["data/words.txt"])],
     entry_points={
         "console_scripts": [
-            "play-wordle=wordle.game:main",
-            "solve-wordle=wordle.solver:main",
+            "play-wordle=wordle.game:main_wordle",
+            "play-multi-wordle=wordle.game:main_multi_wordle",
+            "play-dordle=wordle.game:main_dordle",
+            "play-quordle=wordle.game:main_quordle",
+            "play-octordle=wordle.game:main_octordle",
+            "solve-wordle=wordle.solver:main_wordle",
+            "solve-multi-wordle=wordle.solver:main_multi_wordle",
+            "solve-dordle=wordle.solver:main_dordle",
+            "solve-quordle=wordle.solver:main_quordle",
+            "solve-octordle=wordle.solver:main_octordle",
         ]
     },
     classifiers=[
