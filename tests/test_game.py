@@ -1,10 +1,4 @@
-from wordle.game import (
-    STEPS_PER_GAME,
-    LetterEvaluation,
-    Wordle,
-    WordleStepInfo,
-    _evaluate_guess,
-)
+from wordle.game import LetterEvaluation, Wordle, WordleStepInfo, _evaluate_guess
 
 
 def test_letter_evaluation():
@@ -75,7 +69,7 @@ def test_game_done():
     game._word = "hello"
     assert game.done is False
 
-    game._step = STEPS_PER_GAME
+    game._step = game.total_steps
     assert game.done is True
 
     game._step = 1

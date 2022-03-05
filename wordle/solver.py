@@ -1,6 +1,6 @@
 from __future__ import annotations
-import argparse
 
+import argparse
 import re
 import sys
 from argparse import ArgumentParser
