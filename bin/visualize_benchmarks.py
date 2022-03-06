@@ -1,11 +1,11 @@
 import json
 import os
 from functools import lru_cache
-from typing import Counter, Dict, List
+from typing import Dict, List
 
 import matplotlib.pyplot as plt
 
-from wordle.solver import Solver
+from wordle.solver import WordleSolver
 
 BENCHMARKS_PATH = os.path.join(
     os.path.dirname(__file__), "..", "data", "benchmarks.jsonl"
@@ -21,7 +21,7 @@ def load_benchmarks() -> List[Dict]:
 
 def load_recommended_words() -> List[Dict]:
     benchmarks = load_benchmarks()
-    recommended = Solver().recommend()
+    recommended = WordleSolver().recommend()
     words = [recommended.recommended, *recommended.alternatives]
     return [b for b in benchmarks if b["first_guess"] in words]
 

@@ -7,7 +7,7 @@ from tqdm import tqdm
 
 from wordle.data import load_words
 from wordle.game import Wordle
-from wordle.solver import Solver
+from wordle.solver import WordleSolver
 
 BENCHMARKS_PATH = os.path.join(
     os.path.dirname(__file__), "..", "data", "benchmarks.jsonl"
@@ -19,7 +19,7 @@ def solve_game(
 ) -> Tuple[bool, int]:
     game = Wordle(silent=True)
     game._word = word
-    solver = Solver(mode=mode)
+    solver = WordleSolver(mode=mode)
     guess = first_guess
 
     while guess != game._word and not game.done:
