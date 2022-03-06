@@ -188,20 +188,15 @@ class MultiWordleSolver:
         words: Tuple[str, ...] = sum(
             (solver.words for solver in self.solvers), start=tuple()
         )
-        # if self.mode == "win-percentage":
-        #     words = _rank_by_win_percentage(words)
-        # elif self.mode == "turns-to-win":
-        #     words = _rank_by_turns_to_win(self.words)
         if self.mode == "probability":
             words = _rank_by_chain_prob(words)
-        # elif self.mode == "avg-split":
-        #     words = _rank_by_average_split(self.words)
-        # elif self.mode == "max-split":
-        #     words = _rank_by_maximum_split(self.words)
-        # elif self.mode == "exhaustive":
-        #     words = _rank_by_exhaustive_search(self.words)
         else:
             raise ValueError(f"Solver mode '{self.mode}' is not supported.")
+
+        for solver in self.solvers:
+            if len(solver.words) == 1:
+                word = solver.words[0]
+                words = (word,) + tuple(w for w in words if w != word)
 
         return WordRecommendations(
             recommended=words[0], alternatives=words[1 : max_alternatives + 1]
