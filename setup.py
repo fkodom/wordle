@@ -48,6 +48,7 @@ setup(
             "solve-dordle=wordle.solver:main_dordle",
             "solve-quordle=wordle.solver:main_quordle",
             "solve-octordle=wordle.solver:main_octordle",
+            "bot-wordle=wordle.bot:main_bot_wordle",
         ]
     },
     classifiers=[
