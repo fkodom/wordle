@@ -1,8 +1,10 @@
+from collections import Counter
 import argparse
 import random
 import time
 from dataclasses import dataclass
-from typing import Counter, List, Optional, Tuple
+from functools import lru_cache
+from typing import List, Optional, Tuple
 
 from colorama import Fore
 
@@ -50,26 +52,37 @@ class WordleStepInfo:
 EMPTY_STEP_INFO = WordleStepInfo(step=0, letters=(EMPTY_LETTER,) * 5)
 
 
+@lru_cache(maxsize=65536)
 def _evaluate_guess(
     guess: str, truth: str
 ) -> Tuple[bool, Tuple[LetterEvaluation, ...]]:
-    truth_counts = Counter(truth)
     success = guess == truth
-    letters: List[LetterEvaluation] = []
 
-    for x, y in zip(guess, truth):
-        if x == y:
+    # Count remaining characters for yellow assignment (simple dict, no Counter overhead)
+    remaining = Counter(truth)
+    # remaining: dict = {}
+    # for c in truth:
+    #     remaining[c] = remaining.get(c, 0) + 1
+
+    # First pass: identify exact (green) matches
+    is_green = [False] * WORD_LENGTH
+    letters = []
+    for i, (g, t) in enumerate(zip(guess, truth)):
+        if g == t:
+            is_green[i] = True
+            remaining[g] -= 1
+
+    # Second pass: assign yellows and build result in one shot (no mutation after creation)
+    for i, (g, grn) in enumerate(zip(guess, is_green)):
+        if grn:
             letters.append(
-                LetterEvaluation(text=x, in_word=True, in_correct_position=True)
+                LetterEvaluation(text=g, in_word=True, in_correct_position=True)
             )
-            truth_counts[x] -= 1
+        elif remaining.get(g, 0) > 0:
+            letters.append(LetterEvaluation(text=g, in_word=True))
+            remaining[g] -= 1
         else:
-            letters.append(LetterEvaluation(text=x))
-
-    for x, letter in zip(guess, letters):
-        if not letter.in_word and truth_counts[x] > 0:
-            letter.in_word = True
-            truth_counts[x] -= 1
+            letters.append(LetterEvaluation(text=g))
 
     return success, tuple(letters)
 

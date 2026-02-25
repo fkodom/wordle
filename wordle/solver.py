@@ -1,16 +1,16 @@
 from __future__ import annotations
+from copy import deepcopy
 
 import argparse
-import re
-import sys
 from argparse import ArgumentParser
+from collections import Counter
 from dataclasses import dataclass
 from functools import lru_cache
 from math import perm, prod
-from typing import Counter, Dict, List, Optional, Sequence, Tuple, Union
+from typing import Dict, List, Optional, Sequence, Tuple, Union
 
 from wordle.data import load_words
-from wordle.game import LetterEvaluation, Wordle, WordleStepInfo
+from wordle.game import LetterEvaluation, WordleStepInfo, _evaluate_guess
 
 
 @dataclass
@@ -69,19 +69,44 @@ def _rank_by_maximum_split(words: Tuple[str, ...]) -> Tuple[str, ...]:
     return tuple(w for w in sorted(words, key=lambda w: avg_words[w]))
 
 
-def _num_words_after_guess(truth: str, guess: str, words: Tuple[str, ...]) -> int:
-    wordle = Wordle(silent=True)
-    wordle._word = truth
-    step_info = wordle.step(guess)
-    return len(_filter_words_from_step_info(words, step_info))
+@lru_cache(maxsize=65536)
+def _eval_pattern(guess: str, truth: str) -> int:
+    """Compact evaluation pattern as a base-3 integer in [0, 243)."""
+    remaining: dict = {}
+    for c in truth:
+        remaining[c] = remaining.get(c, 0) + 1
+
+    result = [0, 0, 0, 0, 0]
+    for i in range(5):
+        if guess[i] == truth[i]:
+            result[i] = 2
+            remaining[guess[i]] -= 1
+
+    for i in range(5):
+        if result[i] == 0 and remaining.get(guess[i], 0) > 0:
+            result[i] = 1
+            remaining[guess[i]] -= 1
+
+    return result[0] * 81 + result[1] * 27 + result[2] * 9 + result[3] * 3 + result[4]
+
+
+def _partition_buckets(guess: str, words: Tuple[str, ...]) -> Dict[int, int]:
+    """Count words in each evaluation-pattern bucket for a given guess."""
+    buckets: Dict[int, int] = {}
+    for word in words:
+        p = _eval_pattern(guess, word)
+        buckets[p] = buckets.get(p, 0) + 1
+    return buckets
 
 
 def _avg_words_after_guess(guess: str, words: Tuple[str, ...]) -> float:
-    return sum(_num_words_after_guess(w, guess, words) for w in words) / len(words)
+    buckets = _partition_buckets(guess, words)
+    return sum(c * c for c in buckets.values()) / len(words)
 
 
 def _max_words_after_guess(guess: str, words: Tuple[str, ...]) -> float:
-    return max(_num_words_after_guess(w, guess, words) for w in words)
+    buckets = _partition_buckets(guess, words)
+    return max(buckets.values())
 
 
 @lru_cache(maxsize=2048)
@@ -91,18 +116,19 @@ def _rank_by_exhaustive_search(words: Tuple[str, ...]) -> Tuple[str, ...]:
 
 
 def _num_turns_to_win(truth: str, guess: Optional[str], words: Tuple[str, ...]) -> int:
-    wordle = Wordle(silent=True)
-    wordle._word = truth
     solver = WordleSolver(mode="exhaustive")
     solver.words = words
+    step = 1
 
     while guess != truth:
         assert guess is not None
-        info = wordle.step(guess)
+        success, letters = _evaluate_guess(guess, truth)
+        info = WordleStepInfo(step=step, success=success, done=success, letters=letters)
         solver.update(info)
         guess = solver.recommend().recommended
+        step += 1
 
-    return wordle._step
+    return step
 
 
 def _avg_turns_to_win(guess: str, words: Tuple[str, ...]) -> float:
@@ -119,7 +145,7 @@ def _rank_by_turns_to_win(words: Tuple[str, ...]) -> Tuple[str, ...]:
 def _rank_by_win_percentage(words: Tuple[str, ...]) -> Tuple[str, ...]:
     if len(words) > 128:
         return _rank_by_chain_prob(words)
-    elif len(words) > 16:
+    elif len(words) > 32:
         return _rank_by_average_split(words)
     else:
         return _rank_by_exhaustive_search(words)
@@ -215,37 +241,71 @@ class QuordleSolver(MultiWordleSolver):
         super().__init__(num_words=4, mode=mode)
 
 
-def _get_character_limits_from_step_info(
-    info: WordleStepInfo,
-) -> Dict[str, Tuple[int, int]]:
-    unique_characters = set([x.text for x in info.letters])
-    grouped = {c: [x for x in info.letters if x.text == c] for c in unique_characters}
-    min_counts = {k: sum(x.in_word for x in v) for k, v in grouped.items()}
-    max_counts = {
-        k: (sys.maxsize if all(x.in_word for x in v) else min_counts[k])
-        for k, v in grouped.items()
-    }
-    return {k: (min_counts[k], max_counts[k]) for k in unique_characters}
-
-
 @lru_cache(maxsize=1024)
 def _filter_words_from_step_info(
     words: Tuple[str, ...], info: WordleStepInfo
 ) -> Tuple[str, ...]:
-    limits = _get_character_limits_from_step_info(info)
+    word_len = len(info.letters)
 
-    exclude_phrase = "".join([c for c, (_, upper) in limits.items() if upper == 0])
-    regex_terms = [
-        x.text if x.in_correct_position else f"[^{x.text}{exclude_phrase}]"
-        for x in info.letters
-    ]
-    regex_phrase = re.compile("".join(regex_terms))
-    words = tuple(w for w in words if regex_phrase.match(w))
+    # Group evaluations by character to compute count constraints
+    char_in_word_count: Dict[str, int] = {}
+    char_has_miss: Dict[str, bool] = {}
+    for letter in info.letters:
+        c = letter.text
+        if c not in char_in_word_count:
+            char_in_word_count[c] = 0
+            char_has_miss[c] = False
+        if letter.in_word:
+            char_in_word_count[c] += 1
+        else:
+            char_has_miss[c] = True
 
+    # Build count constraints and set of fully absent characters
+    absent: set = set()
+    count_checks: list = []
+    for c, lo in char_in_word_count.items():
+        if char_has_miss[c]:
+            hi = lo
+        else:
+            hi = word_len
+        if hi == 0:
+            absent.add(c)
+        else:
+            count_checks.append((c, lo, hi))
+
+    # Build positional constraints
+    exact = [None] * word_len
+    exclude_at = [absent.copy() for _ in range(word_len)]
+    for i, letter in enumerate(info.letters):
+        if letter.in_correct_position:
+            exact[i] = letter.text
+        else:
+            exclude_at[i].add(letter.text)
+
+    # Single-pass filter with early exit per word
     out = []
     for word in words:
-        counts = _cached_counter(word)
-        if all(lower <= counts[k] <= upper for k, (lower, upper) in limits.items()):
+        # Positional checks
+        valid = True
+        for i in range(word_len):
+            c = word[i]
+            if exact[i] is not None:
+                if c != exact[i]:
+                    valid = False
+                    break
+            elif c in exclude_at[i]:
+                valid = False
+                break
+        if not valid:
+            continue
+
+        # Character count checks
+        for c, lo, hi in count_checks:
+            cnt = word.count(c)
+            if cnt < lo or cnt > hi:
+                valid = False
+                break
+        if valid:
             out.append(word)
 
     return tuple(out)
@@ -269,7 +329,7 @@ def _get_wordle_step_info(step: int, guess: Optional[str] = None) -> WordleStepI
         guess = _get_valid_word_input("Enter your guess: ")
 
     colors = _get_input(
-        "What color was each square?\n" "(b=black/gray, y=yellow, g=green): "
+        "What color was each square?\n(b=black/gray, y=yellow, g=green): "
     )
     success = all(color == "g" for color in colors)
     letters = tuple(
