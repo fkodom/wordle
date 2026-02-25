@@ -32,12 +32,10 @@ def solve_game(
 
 def test_solver_with_first_guess(first_guess: str, mode: str = "turns-to-win") -> Dict:
     words = load_words()
-    with cProfile.Profile() as pr:
-        results = [
-            solve_game(w, first_guess, mode=mode)
-            for w in tqdm(words, position=1, leave=False)
-        ]
-    pr.dump_stats("profile.prof")
+    results = [
+        solve_game(w, first_guess, mode=mode)
+        for w in tqdm(words, position=1, leave=False)
+    ]
 
     return {
         "first_guess": first_guess,

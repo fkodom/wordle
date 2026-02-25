@@ -9,7 +9,7 @@ from functools import lru_cache
 from math import perm, prod
 from typing import Dict, List, Optional, Sequence, Tuple, Union
 
-from wordle.data import load_words
+from wordle.data import load_all_words, load_words
 from wordle.game import LetterEvaluation, WordleStepInfo, _evaluate_guess
 
 
@@ -155,6 +155,8 @@ class WordleSolver:
     def __init__(self, mode: str = "turns-to-win"):
         self.mode = mode
         self.words = load_words()
+        primary_set = set(self.words)
+        self.fallback_words = tuple(w for w in load_all_words() if w not in primary_set)
 
     def recommend(self, max_alternatives: int = 5) -> WordRecommendations:
         if len(self.words) == len(load_words()):
@@ -169,31 +171,41 @@ class WordleSolver:
                     alternatives=["blast", "tapir", "ralph"],
                 )
 
+        words = self.words if self.words else self.fallback_words
+
         if self.mode == "win-percentage":
-            self.words = _rank_by_win_percentage(self.words)
+            words = _rank_by_win_percentage(words)
         elif self.mode == "turns-to-win":
-            self.words = _rank_by_turns_to_win(self.words)
+            words = _rank_by_turns_to_win(words)
         elif self.mode == "probability":
-            self.words = _rank_by_chain_prob(self.words)
+            words = _rank_by_chain_prob(words)
         elif self.mode == "avg-split":
-            self.words = _rank_by_average_split(self.words)
+            words = _rank_by_average_split(words)
         elif self.mode == "max-split":
-            self.words = _rank_by_maximum_split(self.words)
+            words = _rank_by_maximum_split(words)
         elif self.mode == "exhaustive":
-            self.words = _rank_by_exhaustive_search(self.words)
+            words = _rank_by_exhaustive_search(words)
         else:
             raise ValueError(f"Solver mode '{self.mode}' is not supported.")
 
-        if len(self.words) > 0:
+        if self.words:
+            self.words = words
+        else:
+            self.fallback_words = words
+
+        if len(words) > 0:
             return WordRecommendations(
-                recommended=self.words[0],
-                alternatives=self.words[1 : max_alternatives + 1],
+                recommended=words[0],
+                alternatives=words[1 : max_alternatives + 1],
             )
         else:
             return WordRecommendations(recommended=None, alternatives=())
 
     def update(self, step_info: WordleStepInfo) -> Optional[str]:
         self.words = _filter_words_from_step_info(self.words, step_info)
+        self.fallback_words = _filter_words_from_step_info(
+            self.fallback_words, step_info
+        )
         return self.recommend().recommended
 
 
@@ -317,7 +329,7 @@ def _get_input(prompt: str) -> str:
 
 def _get_valid_word_input(prompt: str) -> str:
     word = _get_input(prompt)
-    if word in load_words():
+    if word in set(load_all_words()):
         return word
     else:
         print("Not a valid 'Wordle' word! Try again.")
@@ -360,7 +372,8 @@ class AssistiveWordleSolver(WordleSolver):
         while not self.done:
             print(f"\nStep {self.step}")
             print("-" * 16)
-            print(f"{len(self.words)} solutions remaining")
+            remaining = self.words if self.words else self.fallback_words
+            print(f"{len(remaining)} solutions remaining")
             recommendations = self.recommend()
             print(recommendations)
             print("-" * 16)
